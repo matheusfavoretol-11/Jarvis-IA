@@ -32,40 +32,51 @@ export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenPr
   const speak = useCallback(() => {
     if (!isAudioEnabled || hasStartedVoice) return;
     
-    // Small delay to sync with visual typing or ensure user interaction context
-    setTimeout(() => {
-      const utterance = new SpeechSynthesisUtterance(fullText);
-      utterance.lang = 'pt-BR';
-      utterance.rate = 0.9; // Slightly slower for "intelligent/calm" feel
-      utterance.pitch = 0.8; // Lower pitch for "masculine/confident" feel
-      
-      // Find a good Portuguese voice if available
-      const voices = window.speechSynthesis.getVoices();
-      const ptVoice = voices.find(v => v.lang.includes('pt-BR')) || voices.find(v => v.lang.includes('pt'));
-      if (ptVoice) utterance.voice = ptVoice;
-      
-      window.speechSynthesis.speak(utterance);
-      setHasStartedVoice(true);
-    }, 800);
+    // Explicitly cancel any pending speech
+    window.speechSynthesis.cancel();
+
+    const utterance = new SpeechSynthesisUtterance(fullText);
+    utterance.lang = 'pt-BR';
+    utterance.rate = 0.95; 
+    utterance.pitch = 0.9;
+    
+    // Improved voice selection
+    const voices = window.speechSynthesis.getVoices();
+    // Prefer higher quality local voices if available
+    const preferredVoice = voices.find(v => v.lang === 'pt-BR' && v.localService) || 
+                          voices.find(v => v.lang === 'pt-BR') || 
+                          voices.find(v => v.lang.startsWith('pt'));
+    
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+    
+    utterance.onstart = () => setHasStartedVoice(true);
+    utterance.onerror = (e) => console.error('Speech error:', e);
+    
+    window.speechSynthesis.speak(utterance);
   }, [fullText, isAudioEnabled, hasStartedVoice]);
 
   useEffect(() => {
-    // Chrome and other browsers require user interaction to play audio. 
-    // We'll try to speak, but it might only work after the user clicks anywhere or the button.
-    // However, the prompt asks for "automatic" - we'll do our best.
-    const handleInitialVoice = () => {
-      speak();
-    };
+    const timer = setTimeout(() => {
+      if (window.speechSynthesis.getVoices().length > 0) {
+        speak();
+      } else {
+        window.speechSynthesis.onvoiceschanged = speak;
+      }
+    }, 1000);
 
-    if (window.speechSynthesis.getVoices().length > 0) {
-      handleInitialVoice();
-    } else {
-      window.speechSynthesis.onvoiceschanged = handleInitialVoice;
-    }
+    // Modern browsers require interaction. We'll listen for any click on the welcome screen to "unblock"
+    const handleFirstInteraction = () => {
+      speak();
+      window.removeEventListener('click', handleFirstInteraction);
+    };
+    window.addEventListener('click', handleFirstInteraction);
 
     return () => {
+      clearTimeout(timer);
       window.speechSynthesis.onvoiceschanged = null;
-      window.speechSynthesis.cancel();
+      window.removeEventListener('click', handleFirstInteraction);
     };
   }, [speak]);
 
