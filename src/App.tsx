@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Zap, 
@@ -9,13 +9,15 @@ import {
   History as HistoryIcon,
   Search,
   Activity,
-  Trash2
+  Trash2,
+  Mic
 } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { UploadZone } from './components/UploadZone';
 import { AnalysisCard } from './components/AnalysisCard';
 import { StatsView } from './components/StatsView';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { VoiceController } from './components/VoiceController';
 import { Analysis } from './types';
 import { cn } from './lib/utils';
 
@@ -49,7 +51,7 @@ export default function App() {
     localStorage.setItem('jarvis_history', JSON.stringify(history));
   }, [history]);
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = useCallback(async () => {
     if ((activeTab !== 'ideas' && selectedFiles.length === 0) || isLoading) return;
 
     setIsLoading(true);
@@ -168,7 +170,7 @@ export default function App() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [activeTab, selectedFiles, isLoading, competitorInfo, userMessage, productDetails]);
 
   const handleFeedback = (id: string, type: 'helpful' | 'not-helpful') => {
     setHistory(prev => prev.map(item => item.id === id ? { ...item, userFeedback: type } : item));
@@ -181,6 +183,33 @@ export default function App() {
     setHistory(prev => prev.filter(item => item.id !== id));
     if (currentAnalysis?.id === id) setCurrentAnalysis(null);
   };
+
+  const handleVoiceCommand = useCallback((cmd: string) => {
+    const text = cmd.toLowerCase();
+    
+    // Navigation
+    if (text.includes('dashboard') || text.includes('início')) {
+      setActiveTab('dashboard');
+      setCurrentAnalysis(null);
+    } else if (text.includes('analisar') || text.includes('análise')) {
+      setActiveTab('analyze');
+      setCurrentAnalysis(null);
+    } else if (text.includes('histórico')) {
+      setActiveTab('history');
+      setCurrentAnalysis(null);
+    } else if (text.includes('ideias') || text.includes('ideia')) {
+      setActiveTab('ideas');
+      setCurrentAnalysis(null);
+    } else if (text.includes('concorrência') || text.includes('espionar')) {
+      setActiveTab('spy');
+      setCurrentAnalysis(null);
+    }
+
+    // Actions
+    if (text.includes('iniciar') || text.includes('executar') || text.includes('processar') || text.includes('go')) {
+      handleAnalyze();
+    }
+  }, [activeTab, handleAnalyze]);
 
   const avgScore = history.length > 0 
     ? (history.reduce((acc, curr) => acc + curr.rating, 0) / history.length).toFixed(1)
@@ -272,6 +301,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-8">
+            <VoiceController onCommand={handleVoiceCommand} />
             <div className="flex gap-12">
                <div className="text-right">
                   <p className="text-[8px] text-white/20 uppercase tracking-widest font-mono">Análises</p>
