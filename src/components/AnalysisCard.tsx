@@ -1,9 +1,10 @@
-import React from 'react';
-import { ThumbsUp, ThumbsDown, Share2, Download, Zap, BrainCircuit, Target, Lightbulb } from 'lucide-react';
+import React, { useState } from 'react';
+import { ThumbsUp, ThumbsDown, Share2, Download, Zap, BrainCircuit, Target, Lightbulb, Play, Square } from 'lucide-react';
 import { motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '../lib/utils';
 import { Analysis } from '../types';
+import { voiceService } from '../services/voiceService';
 
 interface AnalysisCardProps {
   analysis: Analysis;
@@ -12,6 +13,22 @@ interface AnalysisCardProps {
 }
 
 export const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onFeedback, isStreaming }) => {
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  const handleListen = () => {
+    if (isSpeaking) {
+      voiceService.stop();
+      setIsSpeaking(false);
+      return;
+    }
+
+    voiceService.speak({
+      text: analysis.feedback || '',
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false)
+    });
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -20,7 +37,23 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onFeedback
     >
       <header className="flex flex-col gap-2">
         <div className="flex items-center justify-between text-[8px] font-mono tracking-[0.4em] text-white/20 uppercase">
-          <span>{analysis.mode}_Protocol // Report_0x{analysis.id.slice(0, 4)}</span>
+          <div className="flex items-center gap-4">
+            <span>{analysis.mode}_Protocol // Report_0x{analysis.id.slice(0, 4)}</span>
+            {analysis.feedback && !isStreaming && (
+              <button 
+                onClick={handleListen}
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1 rounded-full border transition-all active:scale-95",
+                  isSpeaking 
+                    ? "bg-blue-500/10 border-blue-500/30 text-blue-500/80" 
+                    : "bg-white/5 border-white/5 text-white/40 hover:text-white hover:border-white/20"
+                )}
+              >
+                {isSpeaking ? <Square className="w-2 h-2 fill-current" /> : <Play className="w-2 h-2 fill-current" />}
+                <span>{isSpeaking ? 'Parar' : 'Ouvir'}</span>
+              </button>
+            )}
+          </div>
           {isStreaming && <div className="flex items-center gap-2 text-white animate-pulse"><div className="w-1 h-1 bg-white rounded-full" /> Streaming_Data</div>}
         </div>
         <h2 className="text-white text-4xl leading-none font-black uppercase tracking-tighter">

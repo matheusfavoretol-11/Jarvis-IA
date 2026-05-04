@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Volume2, VolumeX, Sparkles, Cpu } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { voiceService } from '../services/voiceService';
 
 interface WelcomeScreenProps {
   onEnter: () => void;
@@ -10,10 +11,7 @@ interface WelcomeScreenProps {
 
 export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenProps) {
   const [text, setText] = useState('');
-  const [isAudioEnabled, setIsAudioEnabled] = useState(() => {
-    const saved = localStorage.getItem('jarvis_sound_enabled');
-    return saved !== null ? JSON.parse(saved) : true;
-  });
+  const [isAudioEnabled, setIsAudioEnabled] = useState(voiceService.getAudioEnabled());
   const [hasStartedVoice, setHasStartedVoice] = useState(false);
   const [isAwake, setIsAwake] = useState(false);
   const voiceTriggerRef = useRef(false);
@@ -33,46 +31,26 @@ export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenPr
     return () => clearInterval(timer);
   }, [fullText, isAwake]);
 
-  const speak = useCallback(() => {
+  const speak = useCallback(async () => {
     if (!isAudioEnabled || voiceTriggerRef.current) return;
     
-    // Explicitly cancel any pending speech
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(fullText);
-    utterance.lang = 'pt-BR';
-    utterance.rate = 0.85; // Slightly slower for more natural, thoughtful pacing
-    utterance.pitch = 0.9;
-    utterance.volume = 1;
-
-    // Search for the most "Premium" voice available
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoices = [
-      'Google português do Brasil',
-      'Microsoft Daniel - Portuguese (Brazil)',
-      'Luciana',
-      'Neural',
-      'Guga'
-    ];
-
-    let selectedVoice = voices.find(v => v.lang === 'pt-BR' && preferredVoices.some(p => v.name.includes(p)));
-    
-    // Fallback to any pt-BR voice
-    if (!selectedVoice) {
-      selectedVoice = voices.find(v => v.lang.includes('pt-BR')) || voices.find(v => v.lang.includes('pt'));
-    }
-
-    if (selectedVoice) {
-      utterance.voice = selectedVoice;
-    }
-
-    utterance.onstart = () => {
+    // Check if played in the last 10 minutes to avoid annoyance on refresh
+    const lastSession = localStorage.getItem('jarvis_last_voice_session');
+    const now = Date.now();
+    if (lastSession && now - parseInt(lastSession) < 600000) {
       voiceTriggerRef.current = true;
       setHasStartedVoice(true);
-      localStorage.setItem('jarvis_last_voice_session', Date.now().toString());
-    };
+      return;
+    }
 
-    window.speechSynthesis.speak(utterance);
+    await voiceService.speak({
+      text: fullText,
+      onStart: () => {
+        voiceTriggerRef.current = true;
+        setHasStartedVoice(true);
+        localStorage.setItem('jarvis_last_voice_session', Date.now().toString());
+      }
+    });
   }, [fullText, isAudioEnabled]);
 
   // Autoplay Workaround: Trigger on first movement or click
@@ -80,7 +58,6 @@ export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenPr
     const wakeUp = () => {
       if (!isAwake) {
         setIsAwake(true);
-        // Small delay to ensure state updates before voice
         setTimeout(speak, 800);
       }
     };
@@ -89,18 +66,11 @@ export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenPr
     window.addEventListener('click', wakeUp, { once: true });
     window.addEventListener('scroll', wakeUp, { once: true });
 
-    // Handle voice list loading late
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        if (isAwake) speak();
-      };
-    }
-
     return () => {
       window.removeEventListener('mousemove', wakeUp);
       window.removeEventListener('click', wakeUp);
       window.removeEventListener('scroll', wakeUp);
-      window.speechSynthesis.cancel();
+      voiceService.stop();
     };
   }, [speak, isAwake]);
 
@@ -108,8 +78,7 @@ export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenPr
     e.stopPropagation();
     const newValue = !isAudioEnabled;
     setIsAudioEnabled(newValue);
-    localStorage.setItem('jarvis_sound_enabled', JSON.stringify(newValue));
-    if (!newValue) window.speechSynthesis.cancel();
+    voiceService.setAudioEnabled(newValue);
   };
 
   const handleStart = () => {
