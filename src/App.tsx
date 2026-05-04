@@ -21,8 +21,18 @@ import { VoiceController } from './components/VoiceController';
 import { Analysis } from './types';
 import { cn } from './lib/utils';
 
-// Initialize Gemini
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+// Lazy initialization to avoid crash if key is missing on load
+let aiInstance: any = null;
+const getAI = () => {
+  if (!aiInstance) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('CONFIG_ERROR: A chave GEMINI_API_KEY não foi detectada no ambiente.');
+    }
+    aiInstance = new GoogleGenAI({ apiKey });
+  }
+  return aiInstance;
+};
 
 type Tab = 'dashboard' | 'analyze' | 'history' | 'ideas' | 'spy';
 
@@ -129,6 +139,7 @@ export default function App() {
         text: systemPrompt + ` Sempre chame o usuário de "Favoreto". Use tom futurista, minimalista e focado em lucro.`
       });
 
+      const ai = getAI();
       const response = await ai.models.generateContentStream({
         model: "gemini-2.0-flash",
         contents: [{ role: 'user', parts }],
