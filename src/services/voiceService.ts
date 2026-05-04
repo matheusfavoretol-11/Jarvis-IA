@@ -83,13 +83,21 @@ class VoiceService {
 
     // Fallback: Web Speech API
     console.log('VoiceService: Using WebSpeech API fallback.');
-    this.stop();
+    
+    // Explicitly resume in case it's stuck
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.resume();
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'pt-BR';
     utterance.rate = 0.95;
     utterance.pitch = 0.9;
 
     const speakWithBestVoice = () => {
+      // Explicitly clear and resume just before speaking
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.resume();
+      
       const voices = window.speechSynthesis.getVoices();
       const preferredVoices = ['Daniel', 'Guilherme', 'Google português do Brasil', 'Luciana', 'Neural'];
       const voice = voices.find(v => v.lang === 'pt-BR' && preferredVoices.some(p => v.name.includes(p))) || 
@@ -98,22 +106,29 @@ class VoiceService {
       if (voice) {
         console.log('VoiceService: Selected voice:', voice.name);
         utterance.voice = voice;
-      } else {
-        console.warn('VoiceService: No PT-BR voice found.');
       }
       
       utterance.onstart = () => onStart?.();
       utterance.onend = () => onEnd?.();
+      utterance.onerror = (e) => {
+        console.error('VoiceService: Utterance error:', e);
+        onEnd?.();
+      };
+
       window.speechSynthesis.speak(utterance);
     };
 
+    // Browsers load voices asynchronously
     if (window.speechSynthesis.getVoices().length > 0) {
       speakWithBestVoice();
     } else {
-      window.speechSynthesis.onvoiceschanged = () => {
-        speakWithBestVoice();
-        window.speechSynthesis.onvoiceschanged = null;
+      const handleVoices = () => {
+        if (window.speechSynthesis.getVoices().length > 0) {
+          speakWithBestVoice();
+          window.speechSynthesis.removeEventListener('voiceschanged', handleVoices);
+        }
       };
+      window.speechSynthesis.addEventListener('voiceschanged', handleVoices);
     }
   }
 }

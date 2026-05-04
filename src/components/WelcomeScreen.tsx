@@ -44,25 +44,26 @@ export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenPr
     });
   }, [fullText, isAudioEnabled]);
 
-  // Autoplay Workaround: Trigger on first movement or click
+  // Autoplay Workaround: Trigger on first clear interaction
   useEffect(() => {
     const wakeUp = () => {
       if (!isAwake) {
         setIsAwake(true);
-        setTimeout(() => speak(), 800);
+        // Direct call within interaction handler is more likely to be allowed
+        speak();
       }
     };
 
-    window.addEventListener('mousemove', wakeUp, { once: true });
     window.addEventListener('click', wakeUp, { once: true });
+    window.addEventListener('keydown', wakeUp, { once: true });
     window.addEventListener('touchstart', wakeUp, { once: true });
-    window.addEventListener('scroll', wakeUp, { once: true });
+    window.addEventListener('mousemove', wakeUp, { once: true });
 
     return () => {
-      window.removeEventListener('mousemove', wakeUp);
       window.removeEventListener('click', wakeUp);
+      window.removeEventListener('keydown', wakeUp);
       window.removeEventListener('touchstart', wakeUp);
-      window.removeEventListener('scroll', wakeUp);
+      window.removeEventListener('mousemove', wakeUp);
       voiceService.stop();
     };
   }, [speak, isAwake]);
@@ -118,13 +119,18 @@ export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenPr
 
       {/* Initial Interaction Overlay (Invisible but captures first event) */}
       {!isAwake && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center cursor-pointer">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center cursor-pointer bg-black/20">
            <motion.div 
              initial={{ opacity: 0 }}
-             animate={{ opacity: 0.4 }}
-             className="text-[10px] text-white/20 uppercase tracking-[1em] animate-pulse"
+             animate={{ opacity: 0.6 }}
+             className="flex flex-col items-center gap-6"
            >
-             Mova o mouse ou clique para despertar
+             <div className="w-16 h-16 rounded-full border border-white/10 flex items-center justify-center animate-pulse">
+                <Volume2 className="w-6 h-6 text-white/40" />
+             </div>
+             <p className="text-[10px] text-white/30 uppercase tracking-[0.8em] font-mono">
+               Clique para despertar o Jarvis
+             </p>
            </motion.div>
         </div>
       )}
