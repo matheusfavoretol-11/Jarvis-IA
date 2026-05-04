@@ -87,9 +87,9 @@ export const UploadZone: React.FC<UploadZoneProps> = ({ onFilesSelected, isLoadi
                       e.stopPropagation();
                       removeFile(index);
                     }}
-                    className="p-4 bg-white text-black rounded-full hover:scale-110 transition-transform"
+                    className="p-3 bg-black/50 border border-white/20 text-white/60 rounded-full hover:border-white hover:text-white transition-all"
                   >
-                    <X className="w-6 h-6" />
+                    <X className="w-5 h-5" />
                   </button>
                 </div>
               </motion.div>

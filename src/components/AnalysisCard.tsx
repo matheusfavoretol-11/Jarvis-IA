@@ -65,27 +65,27 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({ analysis, onFeedback
                </div>
 
                <div className="flex items-center gap-4 pt-2">
-                  <button 
+                   <button 
                     onClick={() => onFeedback(analysis.id, 'helpful')}
                     className={cn(
-                      "flex-1 px-4 py-2 rounded border text-[8px] uppercase font-bold tracking-[0.2em] transition-all",
+                      "flex-1 py-3 rounded-xl border text-[9px] uppercase font-bold tracking-[0.2em] transition-all",
                       analysis.userFeedback === 'helpful' 
-                        ? "bg-white text-black border-white" 
-                        : "bg-transparent border-white/10 text-white/30 hover:border-white/30"
+                        ? "bg-white/10 border-white/20 text-white" 
+                        : "bg-transparent border-white/5 text-white/20 hover:border-white/20 hover:text-white/40"
                     )}
                   >
-                    Accept
+                    Helpful
                   </button>
                   <button 
                     onClick={() => onFeedback(analysis.id, 'not-helpful')}
                     className={cn(
-                      "flex-1 px-4 py-2 rounded border text-[8px] uppercase font-bold tracking-[0.2em] transition-all",
+                      "flex-1 py-3 rounded-xl border text-[9px] uppercase font-bold tracking-[0.2em] transition-all",
                       analysis.userFeedback === 'not-helpful' 
-                        ? "bg-white/20 text-white border-white/20" 
-                        : "bg-transparent border-white/10 text-white/30 hover:border-white/30"
+                        ? "bg-white/10 border-white/20 text-white" 
+                        : "bg-transparent border-white/5 text-white/20 hover:border-white/20 hover:text-white/40"
                     )}
                   >
-                    Reject
+                    Not Helpful
                   </button>
                </div>
             </div>

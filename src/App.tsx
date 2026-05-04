@@ -254,7 +254,7 @@ export default function App() {
         </div>
 
         <nav className="flex-1 px-4 space-y-1">
-          <p className="px-4 text-[9px] text-white/10 uppercase tracking-[0.3em] font-mono mb-4">Navegação</p>
+          <p className="px-4 text-[9px] text-white/5 uppercase tracking-[0.3em] font-mono mb-4">Navegação</p>
           
           <NavButton 
             active={activeTab === 'dashboard'} 
@@ -383,7 +383,7 @@ export default function App() {
                         </div>
                         <button 
                           onClick={() => setActiveTab('analyze')}
-                          className="px-8 py-3 border border-white/10 rounded-full text-[10px] uppercase font-bold tracking-widest hover:bg-white hover:text-black transition-all"
+                          className="px-8 py-3 bg-white/5 border border-white/10 rounded-xl text-[10px] uppercase font-bold tracking-widest text-white/40 hover:text-white hover:border-white/20 transition-all"
                         >
                           Iniciar Primeira Análise
                         </button>
@@ -480,10 +480,9 @@ export default function App() {
                           <button
                             onClick={handleAnalyze}
                             disabled={isLoading || (activeTab !== 'ideas' && selectedFiles.length === 0)}
-                            className="w-full py-24 bg-white text-black font-black text-3xl uppercase tracking-[0.4em] hover:bg-zinc-200 transition-all disabled:opacity-5 active:scale-95 relative overflow-hidden group"
+                            className="w-full py-8 bg-white/5 border border-white/5 rounded-2xl text-white/40 hover:text-white hover:bg-white/10 hover:border-white/20 font-bold text-xs uppercase tracking-[0.4em] transition-all disabled:opacity-5 active:scale-95 relative overflow-hidden"
                           >
                             <span className="relative z-10">{isLoading ? 'Processing...' : activeTab === 'analyze' ? 'Initialize_Scan' : activeTab === 'ideas' ? 'Start_Genesis' : 'Begin_Spying'}</span>
-                            <div className="absolute inset-0 bg-green-500/10 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                           </button>
                         </div>
                       </div>
@@ -507,19 +506,19 @@ function NavButton({ active, icon, label, onClick }: { active: boolean, icon: Re
     <button
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-4 px-6 py-4 rounded-2xl transition-all duration-300 group",
+        "w-full flex items-center gap-4 px-5 py-3 rounded-xl transition-all duration-300 group",
         active 
-          ? "bg-white text-black font-black" 
-          : "text-white/30 hover:text-white/60 hover:bg-white/[0.01]"
+          ? "bg-white/[0.04] border border-white/10 text-white" 
+          : "text-white/20 hover:text-white/40"
       )}
     >
       <div className={cn(
-        "transition-transform duration-300 group-hover:scale-110",
-        active ? "text-black" : "text-white/20"
+        "transition-transform duration-300 group-hover:scale-105",
+        active ? "text-white/80" : "text-white/10"
       )}>
         {icon}
       </div>
-      <span className="text-[11px] uppercase tracking-widest font-bold">{label}</span>
+      <span className="text-[10px] uppercase tracking-widest font-medium">{label}</span>
     </button>
   );
 }

@@ -220,15 +220,12 @@ export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenPr
         >
           <button
             onClick={handleStart}
-            className="group relative px-16 py-6 rounded-2xl overflow-hidden transition-all duration-500 active:scale-95"
+            className="group relative px-12 py-4 rounded-xl overflow-hidden transition-all duration-500 active:scale-95"
           >
-            {/* Glass Background */}
-            <div className="absolute inset-0 bg-white/5 backdrop-blur-xl border border-white/10 group-hover:border-white/20 transition-all rounded-2xl" />
+            {/* Minimal Border */}
+            <div className="absolute inset-0 border border-white/10 group-hover:border-white/30 transition-all rounded-xl" />
             
-            {/* Hover Glow */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            
-            <span className="relative z-10 text-white font-black text-xs uppercase tracking-[0.6em] transition-colors group-hover:text-blue-200">
+            <span className="relative z-10 text-white/40 font-medium text-[10px] uppercase tracking-[0.6em] transition-colors group-hover:text-white">
               Entrar no Hub
             </span>
           </button>

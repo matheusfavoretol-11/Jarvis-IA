@@ -1,6 +1,6 @@
 {
   "name": "Jarvis Creative AI",
   "description": "AI-powered creative analyzer and generator for marketing teams.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["microphone"],
   "majorCapabilities": []
 }

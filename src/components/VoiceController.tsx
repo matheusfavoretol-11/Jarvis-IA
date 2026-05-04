@@ -10,6 +10,7 @@ interface VoiceControllerProps {
 export function VoiceController({ onCommand }: VoiceControllerProps) {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export function VoiceController({ onCommand }: VoiceControllerProps) {
         const text = result[0].transcript.toLowerCase();
         
         setTranscript(text);
+        setError(null);
 
         if (result.isFinal) {
           onCommand(text);
@@ -37,11 +39,23 @@ export function VoiceController({ onCommand }: VoiceControllerProps) {
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         setIsListening(false);
+        if (event.error === 'not-allowed') {
+          setError('Permissão negada');
+          setTimeout(() => setError(null), 5000);
+        } else {
+          setError('Erro de voz');
+          setTimeout(() => setError(null), 3000);
+        }
       };
 
       recognitionRef.current.onend = () => {
         if (isListening) {
-          recognitionRef.current.start();
+          try {
+            recognitionRef.current.start();
+          } catch (e) {
+            console.error('Failed to restart recognition:', e);
+            setIsListening(false);
+          }
         }
       };
     }
@@ -58,22 +72,33 @@ export function VoiceController({ onCommand }: VoiceControllerProps) {
       recognitionRef.current.stop();
       setIsListening(false);
     } else {
-      recognitionRef.current.start();
-      setIsListening(true);
+      setError(null);
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (e) {
+        console.error('Recognition start error:', e);
+        setError('Erro ao iniciar');
+      }
     }
   };
 
   return (
     <div className="flex items-center gap-4">
       <AnimatePresence>
-        {transcript && (
+        {(transcript || error) && (
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 20 }}
-            className="px-4 py-2 bg-white/5 border border-white/10 rounded-full text-[10px] uppercase tracking-widest font-mono text-white/40"
+            className={cn(
+              "px-4 py-2 border rounded-full text-[10px] uppercase tracking-widest font-mono",
+              error 
+                ? "bg-red-500/10 border-red-500/20 text-red-500"
+                : "bg-white/5 border-white/10 text-white/40"
+            )}
           >
-            Jarvis_Hearing: "{transcript}"
+            {error ? `System_Error: ${error}` : `Jarvis_Hearing: "${transcript}"`}
           </motion.div>
         )}
       </AnimatePresence>
