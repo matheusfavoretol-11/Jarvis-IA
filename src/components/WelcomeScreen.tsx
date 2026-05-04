@@ -87,9 +87,9 @@ export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenPr
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(147,51,234,0.1),transparent_40%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,rgba(59,130,246,0.1),transparent_40%)]" />
       
-      {/* Noise Texture */}
-      <div className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-soft-light" 
-           style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")' }} />
+      {/* Noise Texture Proxy */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay bg-zinc-900" 
+           style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '4px 4px' }} />
 
       {/* Decorative Floating Elements */}
       <div className="absolute top-1/4 -left-12 w-64 h-64 bg-purple-600/10 blur-[100px] rounded-full animate-pulse" />

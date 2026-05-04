@@ -7,6 +7,7 @@ interface VoiceOptions {
 class VoiceService {
   private isAudioEnabled: boolean = true;
   private currentAudio: HTMLAudioElement | null = null;
+  private currentUtterance: SpeechSynthesisUtterance | null = null;
 
   constructor() {
     const saved = localStorage.getItem('jarvis_sound_enabled');
@@ -88,14 +89,15 @@ class VoiceService {
     window.speechSynthesis.cancel();
     window.speechSynthesis.resume();
 
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'pt-BR';
-    utterance.rate = 0.95;
-    utterance.pitch = 0.9;
+    this.currentUtterance = new SpeechSynthesisUtterance(text);
+    this.currentUtterance.lang = 'pt-BR';
+    this.currentUtterance.rate = 0.95;
+    this.currentUtterance.pitch = 0.9;
 
     const speakWithBestVoice = () => {
-      // Explicitly clear and resume just before speaking
-      window.speechSynthesis.cancel();
+      if (!this.currentUtterance) return;
+
+      // Ensure the engine is resumed
       window.speechSynthesis.resume();
       
       const voices = window.speechSynthesis.getVoices();
@@ -105,17 +107,21 @@ class VoiceService {
       
       if (voice) {
         console.log('VoiceService: Selected voice:', voice.name);
-        utterance.voice = voice;
+        this.currentUtterance.voice = voice;
       }
       
-      utterance.onstart = () => onStart?.();
-      utterance.onend = () => onEnd?.();
-      utterance.onerror = (e) => {
+      this.currentUtterance.onstart = () => onStart?.();
+      this.currentUtterance.onend = () => {
+        onEnd?.();
+        this.currentUtterance = null;
+      };
+      this.currentUtterance.onerror = (e) => {
         console.error('VoiceService: Utterance error:', e);
         onEnd?.();
+        this.currentUtterance = null;
       };
 
-      window.speechSynthesis.speak(utterance);
+      window.speechSynthesis.speak(this.currentUtterance);
     };
 
     // Browsers load voices asynchronously
