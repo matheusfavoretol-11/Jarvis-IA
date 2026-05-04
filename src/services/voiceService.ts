@@ -32,13 +32,17 @@ class VoiceService {
   }
 
   async speak({ text, onStart, onEnd }: VoiceOptions) {
-    if (!this.isAudioEnabled) return;
+    if (!this.isAudioEnabled) {
+      console.log('VoiceService: Audio is disabled.');
+      return;
+    }
 
     const env = (import.meta as any).env;
     const apiKey = env.VITE_ELEVENLABS_API_KEY;
-    const voiceId = env.VITE_ELEVENLABS_VOICE_ID || 'pNInz6obpg8ndPBxc9MB'; // "George" - Professional & Confident
+    const voiceId = env.VITE_ELEVENLABS_VOICE_ID || 'pNInz6obpg8ndPBxc9MB';
 
     if (apiKey) {
+      console.log('VoiceService: Attempting ElevenLabs speech...');
       try {
         onStart?.();
         const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
@@ -59,7 +63,7 @@ class VoiceService {
           }),
         });
 
-        if (!response.ok) throw new Error('ElevenLabs API failed');
+        if (!response.ok) throw new Error(`ElevenLabs API failed with status: ${response.status}`);
 
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
@@ -73,27 +77,44 @@ class VoiceService {
         await this.currentAudio.play();
         return;
       } catch (error) {
-        console.warn('ElevenLabs fallback to WebSpeech:', error);
+        console.warn('VoiceService: ElevenLabs failed, falling back to WebSpeech:', error);
       }
     }
 
-    // Fallback: Web Speech API (Optimized)
+    // Fallback: Web Speech API
+    console.log('VoiceService: Using WebSpeech API fallback.');
     this.stop();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'pt-BR';
-    utterance.rate = 0.9;
+    utterance.rate = 0.95;
     utterance.pitch = 0.9;
 
-    const voices = window.speechSynthesis.getVoices();
-    const preferredVoices = ['Daniel', 'Guilherme', 'Google português do Brasil', 'Luciana'];
-    const voice = voices.find(v => v.lang === 'pt-BR' && preferredVoices.some(p => v.name.includes(p))) || 
-                  voices.find(v => v.lang.includes('pt-BR'));
-    
-    if (voice) utterance.voice = voice;
-    
-    utterance.onstart = () => onStart?.();
-    utterance.onend = () => onEnd?.();
-    window.speechSynthesis.speak(utterance);
+    const speakWithBestVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoices = ['Daniel', 'Guilherme', 'Google português do Brasil', 'Luciana', 'Neural'];
+      const voice = voices.find(v => v.lang === 'pt-BR' && preferredVoices.some(p => v.name.includes(p))) || 
+                    voices.find(v => v.lang.includes('pt-BR'));
+      
+      if (voice) {
+        console.log('VoiceService: Selected voice:', voice.name);
+        utterance.voice = voice;
+      } else {
+        console.warn('VoiceService: No PT-BR voice found.');
+      }
+      
+      utterance.onstart = () => onStart?.();
+      utterance.onend = () => onEnd?.();
+      window.speechSynthesis.speak(utterance);
+    };
+
+    if (window.speechSynthesis.getVoices().length > 0) {
+      speakWithBestVoice();
+    } else {
+      window.speechSynthesis.onvoiceschanged = () => {
+        speakWithBestVoice();
+        window.speechSynthesis.onvoiceschanged = null;
+      };
+    }
   }
 }
 

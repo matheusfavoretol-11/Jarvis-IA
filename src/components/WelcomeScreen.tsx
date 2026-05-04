@@ -34,15 +34,6 @@ export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenPr
   const speak = useCallback(async () => {
     if (!isAudioEnabled || voiceTriggerRef.current) return;
     
-    // Check if played in the last 10 minutes to avoid annoyance on refresh
-    const lastSession = localStorage.getItem('jarvis_last_voice_session');
-    const now = Date.now();
-    if (lastSession && now - parseInt(lastSession) < 600000) {
-      voiceTriggerRef.current = true;
-      setHasStartedVoice(true);
-      return;
-    }
-
     await voiceService.speak({
       text: fullText,
       onStart: () => {
@@ -58,17 +49,19 @@ export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenPr
     const wakeUp = () => {
       if (!isAwake) {
         setIsAwake(true);
-        setTimeout(speak, 800);
+        setTimeout(() => speak(), 800);
       }
     };
 
     window.addEventListener('mousemove', wakeUp, { once: true });
     window.addEventListener('click', wakeUp, { once: true });
+    window.addEventListener('touchstart', wakeUp, { once: true });
     window.addEventListener('scroll', wakeUp, { once: true });
 
     return () => {
       window.removeEventListener('mousemove', wakeUp);
       window.removeEventListener('click', wakeUp);
+      window.removeEventListener('touchstart', wakeUp);
       window.removeEventListener('scroll', wakeUp);
       voiceService.stop();
     };
