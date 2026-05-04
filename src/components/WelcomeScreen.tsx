@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Volume2, VolumeX, Sparkles } from 'lucide-react';
+import { Volume2, VolumeX, Sparkles, Cpu } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 interface WelcomeScreenProps {
@@ -15,70 +15,94 @@ export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenPr
     return saved !== null ? JSON.parse(saved) : true;
   });
   const [hasStartedVoice, setHasStartedVoice] = useState(false);
+  const [isAwake, setIsAwake] = useState(false);
+  const voiceTriggerRef = useRef(false);
+  
   const fullText = `O que temos para hoje, ${userName}?`;
 
-  // Typewriter effect
+  // Typewriter effect with more natural pacing
   useEffect(() => {
+    if (!isAwake) return;
+    
     let index = 0;
     const timer = setInterval(() => {
       setText(fullText.slice(0, index + 1));
       index++;
       if (index >= fullText.length) clearInterval(timer);
-    }, 100);
+    }, 80);
     return () => clearInterval(timer);
-  }, [fullText]);
+  }, [fullText, isAwake]);
 
-  // Voice effect
   const speak = useCallback(() => {
-    if (!isAudioEnabled || hasStartedVoice) return;
+    if (!isAudioEnabled || voiceTriggerRef.current) return;
     
     // Explicitly cancel any pending speech
     window.speechSynthesis.cancel();
 
     const utterance = new SpeechSynthesisUtterance(fullText);
     utterance.lang = 'pt-BR';
-    utterance.rate = 0.95; 
+    utterance.rate = 0.85; // Slightly slower for more natural, thoughtful pacing
     utterance.pitch = 0.9;
-    
-    // Improved voice selection
+    utterance.volume = 1;
+
+    // Search for the most "Premium" voice available
     const voices = window.speechSynthesis.getVoices();
-    // Prefer higher quality local voices if available
-    const preferredVoice = voices.find(v => v.lang === 'pt-BR' && v.localService) || 
-                          voices.find(v => v.lang === 'pt-BR') || 
-                          voices.find(v => v.lang.startsWith('pt'));
+    const preferredVoices = [
+      'Google português do Brasil',
+      'Microsoft Daniel - Portuguese (Brazil)',
+      'Luciana',
+      'Neural',
+      'Guga'
+    ];
+
+    let selectedVoice = voices.find(v => v.lang === 'pt-BR' && preferredVoices.some(p => v.name.includes(p)));
     
-    if (preferredVoice) {
-      utterance.voice = preferredVoice;
+    // Fallback to any pt-BR voice
+    if (!selectedVoice) {
+      selectedVoice = voices.find(v => v.lang.includes('pt-BR')) || voices.find(v => v.lang.includes('pt'));
     }
-    
-    utterance.onstart = () => setHasStartedVoice(true);
-    utterance.onerror = (e) => console.error('Speech error:', e);
-    
-    window.speechSynthesis.speak(utterance);
-  }, [fullText, isAudioEnabled, hasStartedVoice]);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (window.speechSynthesis.getVoices().length > 0) {
-        speak();
-      } else {
-        window.speechSynthesis.onvoiceschanged = speak;
-      }
-    }, 1000);
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
 
-    // Modern browsers require interaction. We'll listen for any click on the welcome screen to "unblock"
-    const handleFirstInteraction = () => {
-      speak();
-      window.removeEventListener('click', handleFirstInteraction);
+    utterance.onstart = () => {
+      voiceTriggerRef.current = true;
+      setHasStartedVoice(true);
+      localStorage.setItem('jarvis_last_voice_session', Date.now().toString());
     };
-    window.addEventListener('click', handleFirstInteraction);
+
+    window.speechSynthesis.speak(utterance);
+  }, [fullText, isAudioEnabled]);
+
+  // Autoplay Workaround: Trigger on first movement or click
+  useEffect(() => {
+    const wakeUp = () => {
+      if (!isAwake) {
+        setIsAwake(true);
+        // Small delay to ensure state updates before voice
+        setTimeout(speak, 800);
+      }
+    };
+
+    window.addEventListener('mousemove', wakeUp, { once: true });
+    window.addEventListener('click', wakeUp, { once: true });
+    window.addEventListener('scroll', wakeUp, { once: true });
+
+    // Handle voice list loading late
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        if (isAwake) speak();
+      };
+    }
 
     return () => {
-      clearTimeout(timer);
-      window.speechSynthesis.onvoiceschanged = null;
-      window.removeEventListener('click', handleFirstInteraction);
+      window.removeEventListener('mousemove', wakeUp);
+      window.removeEventListener('click', wakeUp);
+      window.removeEventListener('scroll', wakeUp);
+      window.speechSynthesis.cancel();
     };
-  }, [speak]);
+  }, [speak, isAwake]);
 
   const toggleAudio = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -94,74 +118,133 @@ export function WelcomeScreen({ onEnter, userName = 'Matheus' }: WelcomeScreenPr
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(60,20,120,0.15),transparent_70%)] animate-pulse" />
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay" 
-           style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")' }} />
+    <div className="fixed inset-0 z-[200] bg-[#020105] flex flex-col items-center justify-center overflow-hidden">
+      {/* Premium Gradient Background */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(79,70,229,0.15),transparent_70%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_0%_0%,rgba(147,51,234,0.1),transparent_40%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_100%_100%,rgba(59,130,246,0.1),transparent_40%)]" />
       
-      {/* HUD Elements */}
-      <div className="absolute top-12 left-12 flex items-center gap-4 text-white/20 font-mono text-[10px] tracking-[0.4em] uppercase">
-        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
-        Neural_Link_Established
+      {/* Noise Texture */}
+      <div className="absolute inset-0 opacity-[0.05] pointer-events-none mix-blend-soft-light" 
+           style={{ backgroundImage: 'url("https://grainy-gradients.vercel.app/noise.svg")' }} />
+
+      {/* Decorative Floating Elements */}
+      <div className="absolute top-1/4 -left-12 w-64 h-64 bg-purple-600/10 blur-[100px] rounded-full animate-pulse" />
+      <div className="absolute bottom-1/4 -right-12 w-64 h-64 bg-blue-600/10 blur-[100px] rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
+
+      {/* Top Bar HUD */}
+      <div className="absolute top-8 left-12 flex items-center gap-6">
+        <div className="flex items-center gap-3">
+          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+          <span className="text-[10px] text-white/20 font-mono tracking-[0.4em] uppercase">Jarvis_System_Online</span>
+        </div>
+        <div className="h-[1px] w-24 bg-white/5" />
+        <div className="flex items-center gap-3 text-white/20 font-mono text-[8px] tracking-widest">
+           <Cpu className="w-3 h-3" />
+           V3.0_NEURAL_CORE
+        </div>
       </div>
 
-      <div className="absolute top-12 right-12">
+      <div className="absolute top-8 right-12">
         <button 
           onClick={toggleAudio}
-          className="p-4 rounded-full border border-white/5 bg-white/[0.02] text-white/40 hover:text-white hover:border-white/20 transition-all group"
+          className="p-4 rounded-2xl border border-white/5 bg-white/[0.02] backdrop-blur-xl text-white/40 hover:text-white hover:border-white/20 transition-all group"
         >
           {isAudioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
         </button>
       </div>
 
+      {/* Initial Interaction Overlay (Invisible but captures first event) */}
+      {!isAwake && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center cursor-pointer">
+           <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 0.4 }}
+             className="text-[10px] text-white/20 uppercase tracking-[1em] animate-pulse"
+           >
+             Mova o mouse ou clique para despertar
+           </motion.div>
+        </div>
+      )}
+
       {/* Center Content */}
-      <div className="relative text-center space-y-12 max-w-4xl px-8">
+      <div className="relative z-10 text-center space-y-16 max-w-5xl px-8">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, filter: 'blur(10px)' }}
-          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          initial={{ opacity: 0, scale: 0.95, filter: 'blur(20px)' }}
+          animate={isAwake ? { opacity: 1, scale: 1, filter: 'blur(0px)' } : {}}
           transition={{ duration: 1.5, ease: "easeOut" }}
-          className="space-y-4"
+          className="space-y-6"
         >
-          <div className="flex justify-center mb-8">
+          <div className="flex justify-center mb-12">
             <div className="relative">
-              <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
-              <Sparkles className="w-12 h-12 text-blue-400 relative z-10 animate-pulse" />
+              <motion.div 
+                animate={{ 
+                  scale: [1, 1.2, 1],
+                  opacity: [0.3, 0.6, 0.3]
+                }}
+                transition={{ duration: 4, repeat: Infinity }}
+                className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" 
+              />
+              <div className="relative w-20 h-20 rounded-3xl border border-white/10 flex items-center justify-center bg-white/[0.03] backdrop-blur-2xl">
+                 <Sparkles className="w-8 h-8 text-blue-400/80 animate-pulse" />
+              </div>
             </div>
           </div>
           
-          <h1 className="text-6xl md:text-7xl font-black text-white tracking-tighter leading-tight h-[1.2em]">
-            {text}<span className="inline-block w-2 h-12 bg-white ml-2 animate-pulse align-middle" />
+          <h1 className="text-7xl md:text-8xl font-black text-white tracking-tighter leading-tight min-h-[1.5em] flex items-center justify-center">
+            {text}
+            <motion.span 
+              animate={{ opacity: [0, 1, 0] }}
+              transition={{ duration: 0.8, repeat: Infinity }}
+              className="inline-block w-1 h-16 bg-blue-500 ml-4 rounded-full" 
+            />
           </h1>
           
-          <motion.p 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 2.5 }}
-            className="text-xs uppercase tracking-[0.6em] text-white/30 font-mono"
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={isAwake ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 2.2 }}
+            className="flex flex-col items-center gap-4"
           >
-            Seu hub de performance inteligente
-          </motion.p>
+             <p className="text-[11px] uppercase tracking-[0.8em] text-white/40 font-mono">
+               Seu hub de performance inteligente
+             </p>
+             <div className="h-[1px] w-12 bg-white/10" />
+          </motion.div>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 3 }}
+          animate={isAwake ? { opacity: 1, y: 0 } : {}}
+          transition={{ delay: 2.8 }}
         >
           <button
             onClick={handleStart}
-            className="group relative px-12 py-5 bg-white text-black font-black text-xl uppercase tracking-[0.4em] overflow-hidden hover:scale-105 transition-transform"
+            className="group relative px-16 py-6 rounded-2xl overflow-hidden transition-all duration-500 active:scale-95"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-            <span className="relative z-10">Entrar no Hub</span>
+            {/* Glass Background */}
+            <div className="absolute inset-0 bg-white/5 backdrop-blur-xl border border-white/10 group-hover:border-white/20 transition-all rounded-2xl" />
+            
+            {/* Hover Glow */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            <span className="relative z-10 text-white font-black text-xs uppercase tracking-[0.6em] transition-colors group-hover:text-blue-200">
+              Entrar no Hub
+            </span>
           </button>
         </motion.div>
       </div>
 
-      {/* Decorative Orbs */}
-      <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-600/10 blur-[120px] rounded-full" />
-      <div className="absolute -top-24 -right-24 w-96 h-96 bg-purple-600/10 blur-[120px] rounded-full" />
+      {/* Metadata Hud Footer */}
+      <div className="absolute bottom-12 left-12 right-12 flex justify-between items-center text-white/5 font-mono text-[8px] tracking-[0.3em] uppercase">
+        <div className="flex gap-8">
+           <span>Lat: 23.5505 S</span>
+           <span>Long: 46.6333 W</span>
+        </div>
+        <div className="text-right">
+           <span>Status: Authenticated</span>
+        </div>
+      </div>
     </div>
   );
 }
