@@ -113,17 +113,22 @@ export default function App() {
                         Informações adicionais: ${userMessage || 'Nenhuma'}.
                         Seja impiedoso e focado em lucro.`;
       } else if (activeTab === 'ideas') {
-        systemPrompt = `Protocolo: GENESIS_IDEAS.
+        systemPrompt = `Protocolo: STRATEGIC_GENESIS.
                         Produto/Serviço: ${productDetails || 'Performance Ads'}.
-                        Contexto: ${userMessage || 'Nenhum'}.
-                        Você é o Jarvis. O Favoreto quer criar do zero.
-                        Sua missão:
-                        1. Criar 3 ganchos (Hooks) impossíveis de ignorar.
-                        2. Estruturar 3 roteiros de anúncios (VLS e Criativo Estático).
-                        3. Explicar a psicologia por trás de cada ideia.
-                        4. Definir por que cada ideia vai imprimir dinheiro imediatamente.
-                        5. Nota de 0 a 10 (Format: NOTA: X/10) de potencial de ROI.
-                        Lembre-se: O Favoreto foca em escala absurda.`;
+                        Contexto/Público: ${userMessage || 'Nenhum'}.
+                        Benchmark/Mercado: ${competitorInfo || 'Não especificado'}.
+                        
+                        Você é o Jarvis, o Estrategista de Growth #1 do Favoreto. Sua missão não é apenas dar ideias, mas criar uma VANTAGEM COMPETITIVA DESLEAL.
+                        
+                        Sua análise deve seguir estes pilares:
+                        1. ANÁLISE DE LACUNA (Gap Analysis): O que os concorrentes (${competitorInfo}) estão fazendo de errado ou de forma genérica? Onde eles estão "deixando dinheiro na mesa"?
+                        2. PADRÕES DE SUCESSO: Identifique 3 ganchos (Hooks) de alta retenção baseados em comportamentos de compra reais no nicho.
+                        3. ESTRATÉGIA DE DIFERENCIAÇÃO: Como o Favoreto pode se posicionar como a única solução óbvia, tornando a concorrência irrelevante.
+                        4. ROTEIROS DE ALTA PERFORMANCE: Crie 2 roteiros (um direto ao ponto e um narrativo/storytelling) focados em quebra de objeções e desejo imediato.
+                        5. O QUE NÃO FAZER: Liste 3 erros comuns que matam o ROI nesse nicho específico.
+                        6. NOTA E POTENCIAL: Nota de 0 a 10 (Format: NOTA: X/10) de probabilidade de escala imediata.
+                        
+                        Seja estratégico, ignore o óbvio. Foque em psicologia de vendas e escala agressiva.`;
       } else {
         systemPrompt = `Protocolo: DIAGNOSTIC_CORE.
                         Você é o Jarvis, assistente técnico de performance para o Favoreto.
@@ -456,14 +461,25 @@ export default function App() {
                           )}
 
                           {activeTab === 'ideas' && (
-                             <div className="space-y-4">
-                               <label className="text-[10px] font-mono text-white/20 uppercase tracking-[0.4em]">Produto / Serviço</label>
-                               <input 
-                                  value={productDetails}
-                                  onChange={(e) => setProductDetails(e.target.value)}
-                                  placeholder="Ex: Mentoria de Marketing Digital"
-                                  className="w-full bg-white/[0.01] border border-white/5 rounded-2xl p-6 text-xs text-white focus:outline-none focus:border-white/20 transition-all font-mono"
-                                />
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                               <div className="space-y-4">
+                                 <label className="text-[10px] font-mono text-white/20 uppercase tracking-[0.4em]">Produto / Serviço</label>
+                                 <input 
+                                    value={productDetails}
+                                    onChange={(e) => setProductDetails(e.target.value)}
+                                    placeholder="Ex: Mentoria de Marketing Digital"
+                                    className="w-full bg-white/[0.01] border border-white/5 rounded-2xl p-6 text-xs text-white focus:outline-none focus:border-white/20 transition-all font-mono"
+                                  />
+                               </div>
+                               <div className="space-y-4">
+                                 <label className="text-[10px] font-mono text-white/20 uppercase tracking-[0.4em]">Benchmarks / Concorrentes</label>
+                                 <input 
+                                    value={competitorInfo}
+                                    onChange={(e) => setCompetitorInfo(e.target.value)}
+                                    placeholder="Ex: Player X, Produto Y..."
+                                    className="w-full bg-white/[0.01] border border-white/5 rounded-2xl p-6 text-xs text-white focus:outline-none focus:border-white/20 transition-all font-mono"
+                                  />
+                               </div>
                              </div>
                           )}
                           
