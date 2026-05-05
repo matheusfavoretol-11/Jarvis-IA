@@ -140,15 +140,19 @@ export default function App() {
       });
 
       const ai = getAI();
-      const response = await ai.models.generateContentStream({
-        model: "gemini-2.0-flash",
+      const result = await ai.models.generateContentStream({
+        model: "gemini-3-flash-preview",
         contents: [{ role: 'user', parts }],
       });
 
       let streamedFeedback = '';
 
-      for await (const chunk of (response as any).stream) {
-        const text = chunk.text();
+      if (!result) {
+        throw new Error("Falha ao iniciar stream da IA. Verifique sua conexão ou chave de API.");
+      }
+
+      for await (const chunk of result) {
+        const text = chunk.text;
         if (text) {
           streamedFeedback += text;
           const ratingMatch = streamedFeedback.match(/(?:NOTA:\s*)?(\d+(?:\.\d+)?)\s*\/\s*10/i);
