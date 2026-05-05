@@ -145,17 +145,19 @@ export default function App() {
       });
 
       const ai = getAI();
-      const result = await ai.models.generateContentStream({
-        model: "gemini-flash-latest",
-        contents: { parts },
-      });
-
-      let streamedFeedback = '';
-
-      if (!result) {
-        throw new Error("Falha ao iniciar stream da IA. Verifique sua conexão ou chave de API.");
+      let result: any;
+      try {
+        result = await ai.models.generateContentStream({
+          model: "models/gemini-1.5-flash",
+          contents: [{ role: 'user', parts }],
+        });
+      } catch (e: any) {
+        console.error("Jarvis Strategic Error:", e);
+        throw new Error(`Jarvis: Falha na calibração estratégica. ${e.message || 'Conexão instável.'}`);
       }
 
+      let streamedFeedback = '';
+      
       for await (const chunk of result) {
         const text = chunk.text;
         if (text) {
