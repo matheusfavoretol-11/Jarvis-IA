@@ -148,7 +148,7 @@ export default function App() {
       let result: any;
       try {
         result = await ai.models.generateContentStream({
-          model: "models/gemini-1.5-flash",
+          model: "gemini-3-flash-preview",
           contents: [{ role: 'user', parts }],
         });
       } catch (e: any) {

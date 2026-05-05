@@ -39,7 +39,7 @@ class VoiceService {
     }
 
     const env = (import.meta as any).env;
-    const apiKey = env.VITE_ELEVENLABS_API_KEY;
+    const apiKey = env.VITE_ELEVENLABS_API_KEY || 'sk_e48f05b7c2ee56d8203fa277e15b212cdfd9667bf3bde213';
     const voiceId = env.VITE_ELEVENLABS_VOICE_ID || 'pNInz6obpg8ndPBxc9MB';
 
     if (apiKey) {
