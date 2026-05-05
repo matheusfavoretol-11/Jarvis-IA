@@ -146,8 +146,8 @@ export default function App() {
 
       const ai = getAI();
       const result = await ai.models.generateContentStream({
-        model: "gemini-3-flash-preview",
-        contents: [{ role: 'user', parts }],
+        model: "gemini-flash-latest",
+        contents: { parts },
       });
 
       let streamedFeedback = '';
@@ -168,6 +168,10 @@ export default function App() {
             rating: rating || prev.rating
           } : null);
         }
+      }
+
+      if (!streamedFeedback) {
+        streamedFeedback = "Jarvis: Conexão interrompida. Não foi possível extrair insights estratégicos desta vez. Por favor, ajuste o briefing e tente novamente.";
       }
 
       const ratingMatch = streamedFeedback.match(/(?:NOTA:\s*)?(\d+(?:\.\d+)?)\s*\/\s*10/i);
